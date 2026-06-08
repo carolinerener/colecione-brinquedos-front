@@ -1,4 +1,13 @@
 import Link from 'next/link';
+import Image from 'next/image';
+
+const imagensProdutos: { [key: number]: string } = {
+  1: '/blocodemontar.png',
+  2: '/kitpintura.png',
+  3: '/quebracabeca.png',
+  4: '/torredeencaixe.png',
+  5: '/massinha.png',
+};
 
 async function getProdutos() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
@@ -25,6 +34,20 @@ export default async function ProdutosPage() {
           {produtos.map((produto: { id: number; name: string; price: number; description: string }) => (
             <Link key={produto.id} href={`/produtos/${produto.id}`}>
               <div className="bg-white rounded-2xl shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
+                {imagensProdutos[produto.id] && (
+                  <div className="mb-4">
+                    <Image
+                      src={imagensProdutos[produto.id]}
+                      alt={produto.name}
+                      width={400}
+                      height={300}
+                      className="w-full h-48 object-contain rounded-xl"
+                    />
+                    <p className="text-xs text-gray-400 text-center mt-1">
+                      Imagem ilustrativa
+                    </p>
+                  </div>
+                )}
                 <h2 className="text-lg font-bold mb-2" style={{ color: '#1E5AA8' }}>
                   {produto.name}
                 </h2>
