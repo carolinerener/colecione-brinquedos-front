@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import BotaoCarrinho from '@/components/ui/BotaoCarrinho';
 
 const imagensProdutos: { [key: number]: string } = {
   1: '/blocodemontar.png',
@@ -55,12 +56,7 @@ export default async function ProdutoDetalhePage({ params }: { params: Promise<{
           R$ {Number(produto.price).toFixed(2)}
         </p>
 
-        <button
-          style={{ backgroundColor: '#22D3E6' }}
-          className="text-white px-8 py-3 rounded-full font-bold hover:opacity-90 transition-opacity"
-        >
-          Adicionar ao Carrinho
-        </button>
+        <BotaoCarrinho produto={produto} />
 
       </div>
     </div>
