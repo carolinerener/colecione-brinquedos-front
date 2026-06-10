@@ -28,7 +28,8 @@ export default function LoginPage() {
         return;
       }
 
-      localStorage.setItem('token', data.token);
+     localStorage.setItem('token', data.token);
+     localStorage.setItem('nome', data.user.name);
       window.location.href = '/';
     } catch {
       setErro('Erro ao conectar com o servidor.');

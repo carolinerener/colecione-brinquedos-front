@@ -33,6 +33,7 @@ export default function RegistroPage() {
       }
 
       localStorage.setItem('token', data.token);
+      localStorage.setItem('nome', data.user.name);
       setSucesso('Cadastro realizado com sucesso!');
       setTimeout(() => { window.location.href = '/'; }, 1500);
     } catch {
