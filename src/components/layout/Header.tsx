@@ -48,7 +48,7 @@ export default function Header() {
 
           {usuario ? (
             <div className="flex items-center gap-3">
-              <span style={{ color: '#22D3E6' }} className="font-bold">Olá, {usuario}!</span>
+              <Link href="/minha-conta" style={{ color: '#22D3E6' }} className="font-bold hover:underline">Olá, {usuario}!</Link>
               <button
                 onClick={handleLogout}
                 style={{ backgroundColor: '#F6A623' }}
