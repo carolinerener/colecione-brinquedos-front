@@ -13,7 +13,7 @@ const imagensProdutos: { [key: number]: string } = {
 };
 
 export default function CarrinhoPage() {
-  const { itens, removerItem, limparCarrinho, total, quantidade } = useCarrinho();
+  const { itens, removerItem, aumentarQuantidade, diminuirQuantidade, limparCarrinho, total, quantidade } = useCarrinho();
 
   if (itens.length === 0) {
     return (
@@ -54,8 +54,24 @@ export default function CarrinhoPage() {
             )}
             <div className="flex-1">
               <h2 className="font-bold" style={{ color: '#1E5AA8' }}>{item.name}</h2>
-              <p className="text-sm text-gray-500">Quantidade: {item.quantidade}</p>
-              <p className="font-bold" style={{ color: '#F6A623' }}>
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  onClick={() => diminuirQuantidade(item.id)}
+                  style={{ backgroundColor: '#22D3E6' }}
+                  className="text-white w-7 h-7 rounded-full font-bold hover:opacity-90"
+                >
+                  −
+                </button>
+                <span className="font-bold min-w-[24px] text-center">{item.quantidade}</span>
+                <button
+                  onClick={() => aumentarQuantidade(item.id)}
+                  style={{ backgroundColor: '#22D3E6' }}
+                  className="text-white w-7 h-7 rounded-full font-bold hover:opacity-90"
+                >
+                  +
+                </button>
+              </div>
+              <p className="font-bold mt-1" style={{ color: '#F6A623' }}>
                 R$ {(item.price * item.quantidade).toFixed(2)}
               </p>
             </div>
@@ -85,12 +101,14 @@ export default function CarrinhoPage() {
           >
             Limpar Carrinho
           </button>
-          <button
-            style={{ backgroundColor: '#1E5AA8' }}
-            className="flex-1 text-white py-3 rounded-full font-bold hover:opacity-90 transition-opacity"
-          >
-            Finalizar Compra
-          </button>
+          <Link href="/checkout" className="flex-1">
+            <button
+              style={{ backgroundColor: '#1E5AA8' }}
+              className="w-full text-white py-3 rounded-full font-bold hover:opacity-90 transition-opacity"
+            >
+              Finalizar Compra
+            </button>
+          </Link>
         </div>
       </div>
     </div>
