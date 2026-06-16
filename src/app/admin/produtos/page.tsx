@@ -10,6 +10,7 @@ interface Produto {
   price: number;
   stock: number;
   category_id: number;
+  image?: string;
 }
 
 interface Categoria {
@@ -25,10 +26,13 @@ export default function AdminProdutosPage() {
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
   const [form, setForm] = useState({ name: '', description: '', price: '', stock: '', category_id: '' });
+  const [imagem, setImagem] = useState<File | null>(null);
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [mostrarForm, setMostrarForm] = useState(false);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const baseUrl = apiUrl?.replace('/api', '');
 
   useEffect(() => {
     if (!token) { router.push('/login'); return; }
@@ -38,8 +42,8 @@ export default function AdminProdutosPage() {
   async function carregarDados() {
     try {
       const [prodRes, catRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`),
+        fetch(`${apiUrl}/products`),
+        fetch(`${apiUrl}/categories`),
       ]);
       setProdutos(await prodRes.json());
       setCategorias(await catRes.json());
@@ -52,20 +56,30 @@ export default function AdminProdutosPage() {
 
   async function handleSalvar() {
     setErro(''); setSucesso('');
+
+    const formData = new FormData();
+    formData.append('name', form.name);
+    formData.append('description', form.description);
+    formData.append('price', form.price);
+    formData.append('stock', form.stock);
+    formData.append('category_id', form.category_id);
+    if (imagem) formData.append('image', imagem);
+    if (editandoId) formData.append('_method', 'PUT');
+
     const url = editandoId
-      ? `${process.env.NEXT_PUBLIC_API_URL}/products/${editandoId}`
-      : `${process.env.NEXT_PUBLIC_API_URL}/products`;
-    const method = editandoId ? 'PUT' : 'POST';
+      ? `${apiUrl}/products/${editandoId}`
+      : `${apiUrl}/products`;
 
     try {
       const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...form, price: parseFloat(form.price), stock: parseInt(form.stock), category_id: parseInt(form.category_id) }),
+        method: 'POST',
+        headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+        body: formData,
       });
       if (!res.ok) { setErro('Erro ao salvar produto.'); return; }
       setSucesso(editandoId ? 'Produto atualizado!' : 'Produto criado!');
       setForm({ name: '', description: '', price: '', stock: '', category_id: '' });
+      setImagem(null);
       setEditandoId(null);
       setMostrarForm(false);
       carregarDados();
@@ -76,7 +90,7 @@ export default function AdminProdutosPage() {
 
   async function handleExcluir(id: number) {
     if (!confirm('Excluir este produto?')) return;
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`, {
+    await fetch(`${apiUrl}/products/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -85,6 +99,7 @@ export default function AdminProdutosPage() {
 
   function handleEditar(produto: Produto) {
     setForm({ name: produto.name, description: produto.description, price: String(produto.price), stock: String(produto.stock), category_id: String(produto.category_id) });
+    setImagem(null);
     setEditandoId(produto.id);
     setMostrarForm(true);
   }
@@ -96,7 +111,7 @@ export default function AdminProdutosPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold" style={{ color: '#1E5AA8' }}>Produtos</h1>
         <button
-          onClick={() => { setMostrarForm(!mostrarForm); setEditandoId(null); setForm({ name: '', description: '', price: '', stock: '', category_id: '' }); }}
+          onClick={() => { setMostrarForm(!mostrarForm); setEditandoId(null); setForm({ name: '', description: '', price: '', stock: '', category_id: '' }); setImagem(null); }}
           style={{ backgroundColor: '#22D3E6' }}
           className="text-white px-5 py-2 rounded-full font-bold hover:opacity-90"
         >
@@ -118,6 +133,15 @@ export default function AdminProdutosPage() {
             <option value="">Selecione uma categoria</option>
             {categorias.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
           </select>
+          <div>
+            <label className="text-sm font-medium text-gray-700">Imagem do produto</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={e => setImagem(e.target.files?.[0] || null)}
+              className="w-full mt-1 px-4 py-2 border rounded-xl"
+            />
+          </div>
           <button onClick={handleSalvar} style={{ backgroundColor: '#1E5AA8' }} className="text-white py-2 rounded-full font-bold hover:opacity-90">
             {editandoId ? 'Salvar Alterações' : 'Criar Produto'}
           </button>
@@ -126,11 +150,16 @@ export default function AdminProdutosPage() {
 
       <div className="flex flex-col gap-4">
         {produtos.map(produto => (
-          <div key={produto.id} className="bg-white rounded-2xl shadow p-5 flex items-center justify-between">
-            <div>
-              <p className="font-bold" style={{ color: '#1E5AA8' }}>{produto.name}</p>
-              <p className="text-sm text-gray-500">{produto.description}</p>
-              <p className="text-sm font-bold mt-1" style={{ color: '#F6A623' }}>R$ {Number(produto.price).toFixed(2).replace('.', ',')}</p>
+          <div key={produto.id} className="bg-white rounded-2xl shadow p-5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1">
+              {produto.image && (
+                <img src={`${baseUrl}/storage/${produto.image}`} alt={produto.name} className="w-16 h-16 object-cover rounded-xl" />
+              )}
+              <div>
+                <p className="font-bold" style={{ color: '#1E5AA8' }}>{produto.name}</p>
+                <p className="text-sm text-gray-500">{produto.description}</p>
+                <p className="text-sm font-bold mt-1" style={{ color: '#F6A623' }}>R$ {Number(produto.price).toFixed(2).replace('.', ',')}</p>
+              </div>
             </div>
             <div className="flex gap-2">
               <button onClick={() => handleEditar(produto)} style={{ backgroundColor: '#22D3E6' }} className="text-white px-4 py-1 rounded-full text-sm font-bold hover:opacity-90">Editar</button>
