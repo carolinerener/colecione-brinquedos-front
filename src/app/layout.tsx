@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist } from 'next/font/google';
 import './globals.css';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import LayoutWrapper from '@/components/layout/LayoutWrapper';
 import { CarrinhoProvider } from '@/contexts/CarrinhoContext';
 
 const geist = Geist({ subsets: ['latin'] });
@@ -21,11 +20,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={`${geist.className} flex flex-col min-h-screen bg-[#FFF3E6]`}>
         <CarrinhoProvider>
-          <Header />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
+          <LayoutWrapper>{children}</LayoutWrapper>
         </CarrinhoProvider>
       </body>
     </html>
