@@ -17,8 +17,9 @@ export default function Header() {
   function handleLogout() {
     localStorage.removeItem('token');
     localStorage.removeItem('nome');
+    localStorage.removeItem('carrinho');
     setUsuario(null);
-    window.location.href = '/';
+    window.location.href = '/login';
   }
 
   return (
