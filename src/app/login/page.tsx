@@ -28,8 +28,9 @@ export default function LoginPage() {
         return;
       }
 
-     localStorage.setItem('token', data.token);
-     localStorage.setItem('nome', data.user.name);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('nome', data.user.name);
+      localStorage.removeItem('carrinho');
       window.location.href = '/';
     } catch {
       setErro('Erro ao conectar com o servidor.');
@@ -40,6 +41,11 @@ export default function LoginPage() {
 
   return (
     <div className="max-w-md mx-auto px-4 py-16">
+      <Link href="/" className="flex items-center justify-center gap-2 mb-8">
+        <span style={{ color: '#22D3E6' }} className="text-2xl font-bold">Colecione</span>
+        <span style={{ color: '#F6A623' }} className="text-2xl font-bold">Brinquedos</span>
+      </Link>
+
       <div className="bg-white rounded-2xl shadow p-8">
         <h1 className="text-2xl font-bold mb-6 text-center" style={{ color: '#1E5AA8' }}>
           Entrar
@@ -49,7 +55,7 @@ export default function LoginPage() {
           <p className="text-red-500 text-sm mb-4 text-center">{erro}</p>
         )}
 
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
+        <form onSubmit={handleLogin} className="flex flex-col gap-4" autoComplete="off">
           <div>
             <label className="text-sm font-medium text-gray-700">E-mail</label>
             <input
@@ -57,6 +63,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="off"
               className="w-full mt-1 px-4 py-2 border rounded-xl focus:outline-none focus:ring-2"
               style={{ borderColor: '#22D3E6' }}
               placeholder="seu@email.com"
@@ -70,6 +77,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="new-password"
               className="w-full mt-1 px-4 py-2 border rounded-xl focus:outline-none focus:ring-2"
               style={{ borderColor: '#22D3E6' }}
               placeholder="••••••••"
@@ -90,6 +98,12 @@ export default function LoginPage() {
           Não tem conta?{' '}
           <Link href="/registro" style={{ color: '#22D3E6' }} className="font-bold hover:underline">
             Cadastre-se
+          </Link>
+        </p>
+
+        <p className="text-center text-sm mt-3">
+          <Link href="/" className="text-gray-500 hover:underline">
+            ← Voltar para a loja
           </Link>
         </p>
       </div>
