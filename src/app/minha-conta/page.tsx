@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getMensagemErro, limparSessaoEExpirada } from '@/lib/apiErrors';
 
 interface Produto {
   id: number;
@@ -30,6 +31,7 @@ export default function MinhaContaPage() {
   const [email, setEmail] = useState('');
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -52,13 +54,23 @@ export default function MinhaContaPage() {
           }),
         ]);
 
+        if (meRes.status === 401 || pedidosRes.status === 401) {
+          limparSessaoEExpirada(router);
+          return;
+        }
+
+        if (!meRes.ok || !pedidosRes.ok) {
+          setErro(getMensagemErro(!meRes.ok ? meRes.status : pedidosRes.status));
+          return;
+        }
+
         const meData = await meRes.json();
         setEmail(meData.email || '');
 
         const pedidosData = await pedidosRes.json();
         setPedidos(pedidosData || []);
       } catch {
-        console.error('Erro ao carregar dados.');
+        setErro('Erro ao carregar seus dados. Tente novamente.');
       } finally {
         setLoading(false);
       }
@@ -70,6 +82,8 @@ export default function MinhaContaPage() {
   function handleLogout() {
     localStorage.removeItem('token');
     localStorage.removeItem('nome');
+    localStorage.removeItem('role');
+    localStorage.removeItem('carrinho');
     router.push('/');
   }
 
@@ -80,6 +94,8 @@ export default function MinhaContaPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-bold mb-8" style={{ color: '#1E5AA8' }}>Minha Conta</h1>
+
+      {erro && <p className="text-red-500 mb-4">{erro}</p>}
 
       {/* Dados do usuário */}
       <div className="bg-white rounded-2xl shadow p-6 mb-6">

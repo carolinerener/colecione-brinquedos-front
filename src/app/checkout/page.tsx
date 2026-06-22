@@ -3,6 +3,7 @@
 import { useCarrinho } from '@/contexts/CarrinhoContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { getMensagemErro, limparSessaoEExpirada } from '@/lib/apiErrors';
 
 export default function CheckoutPage() {
   const { itens, total, limparCarrinho } = useCarrinho();
@@ -41,7 +42,17 @@ export default function CheckoutPage() {
         }),
       });
 
-      if (!res.ok) { setErro('Erro ao finalizar pedido.'); return; }
+      if (res.status === 401) {
+        limparSessaoEExpirada(router);
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setErro(getMensagemErro(res.status, data?.message));
+        return;
+      }
+
       limparCarrinho();
       setSucesso(true);
     } catch {
