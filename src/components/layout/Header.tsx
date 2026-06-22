@@ -7,18 +7,23 @@ import { useEffect, useState } from 'react';
 export default function Header() {
   const { quantidade } = useCarrinho();
   const [usuario, setUsuario] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     const nome = localStorage.getItem('nome');
+    const role = localStorage.getItem('role');
     if (token && nome) setUsuario(nome);
+    if (role === 'admin') setIsAdmin(true);
   }, []);
 
   function handleLogout() {
     localStorage.removeItem('token');
     localStorage.removeItem('nome');
+    localStorage.removeItem('role');
     localStorage.removeItem('carrinho');
     setUsuario(null);
+    setIsAdmin(false);
     window.location.href = '/login';
   }
 
@@ -35,6 +40,9 @@ export default function Header() {
           <Link href="/" className="hover:text-yellow-300 transition-colors">Início</Link>
           <Link href="/produtos" className="hover:text-yellow-300 transition-colors">Produtos</Link>
           <Link href="/categorias" className="hover:text-yellow-300 transition-colors">Categorias</Link>
+          {isAdmin && (
+            <Link href="/admin" className="hover:text-yellow-300 transition-colors">Painel Admin</Link>
+          )}
           <Link href="/carrinho" className="relative hover:text-yellow-300 transition-colors">
             🛒
             {quantidade > 0 && (
