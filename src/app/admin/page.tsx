@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAdminGuard } from '@/hooks/useAdminGuard';
 
 interface Resumo {
   produtos: number;
@@ -11,16 +11,14 @@ interface Resumo {
 }
 
 export default function AdminPage() {
-  const router = useRouter();
+  const autorizado = useAdminGuard();
   const [resumo, setResumo] = useState<Resumo>({ produtos: 0, categorias: 0, pedidos: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!autorizado) return;
+
     const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
 
     async function carregarResumo() {
       try {
@@ -49,9 +47,9 @@ export default function AdminPage() {
     }
 
     carregarResumo();
-  }, [router]);
+  }, [autorizado]);
 
-  if (loading) return <p className="text-center py-16">Carregando...</p>;
+  if (!autorizado || loading) return <p className="text-center py-16">Carregando...</p>;
 
   const cards = [
     { label: 'Produtos', valor: resumo.produtos, href: '/admin/produtos', cor: '#22D3E6' },

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAdminGuard } from '@/hooks/useAdminGuard';
+import { getMensagemErro, limparSessaoEExpirada } from '@/lib/apiErrors';
 
 interface Produto {
   id: number;
@@ -19,6 +21,7 @@ interface Categoria {
 }
 
 export default function AdminProdutosPage() {
+  const autorizado = useAdminGuard();
   const router = useRouter();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -35,9 +38,9 @@ export default function AdminProdutosPage() {
   const baseUrl = apiUrl?.replace('/api', '');
 
   useEffect(() => {
-    if (!token) { router.push('/login'); return; }
+    if (!autorizado) return;
     carregarDados();
-  }, []);
+  }, [autorizado]);
 
   async function carregarDados() {
     try {
@@ -76,7 +79,18 @@ export default function AdminProdutosPage() {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
         body: formData,
       });
-      if (!res.ok) { setErro('Erro ao salvar produto.'); return; }
+
+      if (res.status === 401) {
+        limparSessaoEExpirada(router);
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setErro(getMensagemErro(res.status, data?.message));
+        return;
+      }
+
       setSucesso(editandoId ? 'Produto atualizado!' : 'Produto criado!');
       setForm({ name: '', description: '', price: '', stock: '', category_id: '' });
       setImagem(null);
@@ -90,10 +104,23 @@ export default function AdminProdutosPage() {
 
   async function handleExcluir(id: number) {
     if (!confirm('Excluir este produto?')) return;
-    await fetch(`${apiUrl}/products/${id}`, {
+
+    const res = await fetch(`${apiUrl}/products/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
+
+    if (res.status === 401) {
+      limparSessaoEExpirada(router);
+      return;
+    }
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setErro(getMensagemErro(res.status, data?.message));
+      return;
+    }
+
     carregarDados();
   }
 
@@ -104,7 +131,7 @@ export default function AdminProdutosPage() {
     setMostrarForm(true);
   }
 
-  if (loading) return <p className="text-center py-16">Carregando...</p>;
+  if (!autorizado || loading) return <p className="text-center py-16">Carregando...</p>;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">

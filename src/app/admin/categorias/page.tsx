@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAdminGuard } from '@/hooks/useAdminGuard';
+import { getMensagemErro, limparSessaoEExpirada } from '@/lib/apiErrors';
 
 interface Categoria {
   id: number;
@@ -10,6 +12,7 @@ interface Categoria {
 }
 
 export default function AdminCategoriasPage() {
+  const autorizado = useAdminGuard();
   const router = useRouter();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,9 +25,9 @@ export default function AdminCategoriasPage() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   useEffect(() => {
-    if (!token) { router.push('/login'); return; }
+    if (!autorizado) return;
     carregarCategorias();
-  }, []);
+  }, [autorizado]);
 
   async function carregarCategorias() {
     try {
@@ -50,7 +53,18 @@ export default function AdminCategoriasPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(form),
       });
-      if (!res.ok) { setErro('Erro ao salvar categoria.'); return; }
+
+      if (res.status === 401) {
+        limparSessaoEExpirada(router);
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setErro(getMensagemErro(res.status, data?.message));
+        return;
+      }
+
       setSucesso(editandoId ? 'Categoria atualizada!' : 'Categoria criada!');
       setForm({ name: '', description: '' });
       setEditandoId(null);
@@ -63,10 +77,23 @@ export default function AdminCategoriasPage() {
 
   async function handleExcluir(id: number) {
     if (!confirm('Excluir esta categoria?')) return;
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/${id}`, {
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
+
+    if (res.status === 401) {
+      limparSessaoEExpirada(router);
+      return;
+    }
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setErro(getMensagemErro(res.status, data?.message));
+      return;
+    }
+
     carregarCategorias();
   }
 
@@ -76,7 +103,7 @@ export default function AdminCategoriasPage() {
     setMostrarForm(true);
   }
 
-  if (loading) return <p className="text-center py-16">Carregando...</p>;
+  if (!autorizado || loading) return <p className="text-center py-16">Carregando...</p>;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">

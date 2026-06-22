@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAdminGuard } from '@/hooks/useAdminGuard';
+import { getMensagemErro, limparSessaoEExpirada } from '@/lib/apiErrors';
 
 interface ItemPedido {
   id: number;
@@ -20,6 +22,7 @@ interface Pedido {
 }
 
 export default function AdminPedidosPage() {
+  const autorizado = useAdminGuard();
   const router = useRouter();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,15 +31,27 @@ export default function AdminPedidosPage() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   useEffect(() => {
-    if (!token) { router.push('/login'); return; }
+    if (!autorizado) return;
     carregarPedidos();
-  }, []);
+  }, [autorizado]);
 
   async function carregarPedidos() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (res.status === 401) {
+        limparSessaoEExpirada(router);
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setErro(getMensagemErro(res.status, data?.message));
+        return;
+      }
+
       const data = await res.json();
       setPedidos(Array.isArray(data) ? data : []);
     } catch {
@@ -60,7 +75,7 @@ export default function AdminPedidosPage() {
     cancelled: 'Cancelado',
   };
 
-  if (loading) return <p className="text-center py-16">Carregando...</p>;
+  if (!autorizado || loading) return <p className="text-center py-16">Carregando...</p>;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
