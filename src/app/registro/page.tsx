@@ -34,6 +34,7 @@ export default function RegistroPage() {
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('nome', data.user.name);
+      localStorage.setItem('role', data.user.role);
       localStorage.removeItem('carrinho');
       setSucesso('Cadastro realizado com sucesso!');
       setTimeout(() => { window.location.href = '/'; }, 1500);

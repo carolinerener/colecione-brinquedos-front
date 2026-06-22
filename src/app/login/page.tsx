@@ -30,6 +30,7 @@ export default function LoginPage() {
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('nome', data.user.name);
+      localStorage.setItem('role', data.user.role);
       localStorage.removeItem('carrinho');
       window.location.href = '/';
     } catch {
