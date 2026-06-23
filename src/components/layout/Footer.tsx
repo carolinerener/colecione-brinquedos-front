@@ -25,6 +25,9 @@ export default function Footer() {
             <Link href="/termos-de-uso" className="opacity-75 hover:opacity-100 hover:underline">
               Termos de Uso
             </Link>
+            <Link href="/politica-de-cookies" className="opacity-75 hover:opacity-100 hover:underline">
+              Política de Cookies
+            </Link>
           </div>
 
           <div className="text-sm opacity-75 text-center md:text-right">
