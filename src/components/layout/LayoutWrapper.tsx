@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Header from './Header';
 import Footer from './Footer';
+import CookieBanner from '../ui/CookieBanner';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,6 +15,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
       {!esconder && <Header />}
       <main className="flex-1">{children}</main>
       {!esconder && <Footer />}
+      {!esconder && <CookieBanner />}
     </>
   );
 }
