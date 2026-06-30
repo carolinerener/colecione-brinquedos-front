@@ -40,6 +40,10 @@ export default function MinhaContaPage() {
   const [erroExclusao, setErroExclusao] = useState('');
   const [excluindo, setExcluindo] = useState(false);
 
+  // Estados da exportação de dados
+  const [exportando, setExportando] = useState(false);
+  const [mensagemExportacao, setMensagemExportacao] = useState('');
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -102,7 +106,7 @@ export default function MinhaContaPage() {
   }
 
   function fecharModalExclusao() {
-    if (excluindo) return; // não fecha se estiver no meio da exclusão
+    if (excluindo) return;
     setModalAberto(false);
   }
 
@@ -133,7 +137,6 @@ export default function MinhaContaPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        // Erros de validação do Laravel (422) vêm em data.errors
         if (data?.errors) {
           const primeiroErro = Object.values(data.errors)[0] as string[];
           setErroExclusao(primeiroErro[0] || 'Erro ao excluir conta.');
@@ -143,7 +146,6 @@ export default function MinhaContaPage() {
         return;
       }
 
-      // Sucesso: limpa tudo e redireciona
       localStorage.removeItem('token');
       localStorage.removeItem('nome');
       localStorage.removeItem('role');
@@ -154,6 +156,54 @@ export default function MinhaContaPage() {
       setErroExclusao('Erro ao conectar com o servidor. Tente novamente.');
     } finally {
       setExcluindo(false);
+    }
+  }
+
+  async function handleExportarDados() {
+    setMensagemExportacao('');
+    setExportando(true);
+
+    const token = localStorage.getItem('token');
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/me/exportar`, {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.status === 401) {
+        limparSessaoEExpirada(router);
+        return;
+      }
+
+      if (!res.ok) {
+        setMensagemExportacao(getMensagemErro(res.status));
+        return;
+      }
+
+      // Recebe o JSON e força o download como arquivo
+      const dados = await res.json();
+      const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const dataHoje = new Date().toISOString().split('T')[0];
+      const nomeArquivo = `meus-dados-colecione-brinquedos-${dataHoje}.json`;
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = nomeArquivo;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setMensagemExportacao('Seus dados foram exportados com sucesso. Verifique seus downloads.');
+    } catch {
+      setMensagemExportacao('Erro ao conectar com o servidor. Tente novamente.');
+    } finally {
+      setExportando(false);
     }
   }
 
@@ -174,6 +224,13 @@ export default function MinhaContaPage() {
         <h2 className="text-lg font-bold mb-4" style={{ color: '#1E5AA8' }}>Dados Pessoais</h2>
         <p className="text-gray-700"><span className="font-medium">Nome:</span> {nome}</p>
         <p className="text-gray-700 mt-2"><span className="font-medium">E-mail:</span> {email}</p>
+
+        {mensagemExportacao && (
+          <p className="text-sm mt-4 p-3 rounded-xl bg-cyan-50 border border-cyan-200" style={{ color: '#1E5AA8' }}>
+            {mensagemExportacao}
+          </p>
+        )}
+
         <div className="flex flex-wrap gap-3 mt-4">
           <button
             onClick={handleLogout}
@@ -181,6 +238,14 @@ export default function MinhaContaPage() {
             className="text-white px-6 py-2 rounded-full font-bold hover:opacity-90 transition-opacity"
           >
             Sair da conta
+          </button>
+          <button
+            onClick={handleExportarDados}
+            disabled={exportando}
+            style={{ backgroundColor: '#22D3E6' }}
+            className="text-white px-6 py-2 rounded-full font-bold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {exportando ? 'Exportando...' : 'Exportar meus dados'}
           </button>
           <button
             onClick={abrirModalExclusao}
