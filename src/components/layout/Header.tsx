@@ -38,7 +38,6 @@ export default function Header() {
 
         <nav className="flex items-center gap-6 text-sm font-medium">
           <Link href="/" className="hover:text-yellow-300 transition-colors">Início</Link>
-          <Link href="/produtos" className="hover:text-yellow-300 transition-colors">Produtos</Link>
           <Link href="/categorias" className="hover:text-yellow-300 transition-colors">Categorias</Link>
           {isAdmin && (
             <Link href="/admin" className="hover:text-yellow-300 transition-colors">Painel Admin</Link>
