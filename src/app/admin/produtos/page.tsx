@@ -45,11 +45,15 @@ export default function AdminProdutosPage() {
   async function carregarDados() {
     try {
       const [prodRes, catRes] = await Promise.all([
-        fetch(`${apiUrl}/products`),
+        fetch(`${apiUrl}/products?per_page=50`),
         fetch(`${apiUrl}/categories`),
       ]);
-      setProdutos(await prodRes.json());
-      setCategorias(await catRes.json());
+      const prodData = await prodRes.json();
+      const catData = await catRes.json();
+
+      // A API de produtos agora retorna { data: [...], current_page, total, ... }
+      setProdutos(prodData.data || prodData);
+      setCategorias(catData);
     } catch {
       setErro('Erro ao carregar dados.');
     } finally {
