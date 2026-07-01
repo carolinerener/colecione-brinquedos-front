@@ -1,7 +1,6 @@
-import Image from 'next/image';
 import BotaoCarrinho from '@/components/ui/BotaoCarrinho';
 
-const imagensProdutos: { [key: number]: string } = {
+const imagensSeed: { [key: number]: string } = {
   1: '/blocodemontar.png',
   2: '/kitpintura.png',
   3: '/quebracabeca.png',
@@ -9,12 +8,29 @@ const imagensProdutos: { [key: number]: string } = {
   5: '/massinha.png',
 };
 
-async function getProduto(id: string) {
+interface Produto {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  image?: string | null;
+}
+
+async function getProduto(id: string): Promise<Produto | null> {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`, {
     cache: 'no-store',
   });
   if (!res.ok) return null;
   return res.json();
+}
+
+function urlDaImagem(produto: Produto): string | null {
+  if (produto.image) {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const baseUrl = apiUrl?.replace('/api', '');
+    return `${baseUrl}/storage/${produto.image}`;
+  }
+  return imagensSeed[produto.id] || null;
 }
 
 export default async function ProdutoDetalhePage({ params }: { params: Promise<{ id: string }> }) {
@@ -29,17 +45,17 @@ export default async function ProdutoDetalhePage({ params }: { params: Promise<{
     );
   }
 
+  const imagem = urlDaImagem(produto);
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <div className="bg-white rounded-2xl shadow p-8">
 
-        {imagensProdutos[produto.id] && (
+        {imagem && (
           <div className="mb-6">
-            <Image
-              src={imagensProdutos[produto.id]}
+            <img
+              src={imagem}
               alt={produto.name}
-              width={600}
-              height={400}
               className="w-full h-72 object-contain rounded-xl"
             />
             <p className="text-xs text-gray-400 text-center mt-1">Imagem ilustrativa</p>
