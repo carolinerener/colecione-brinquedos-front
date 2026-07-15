@@ -18,7 +18,6 @@ export default function CheckoutPage() {
   const { itens, total, limparCarrinho } = useCarrinho();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [sucesso, setSucesso] = useState(false);
   const [erro, setErro] = useState('');
   const [form, setForm] = useState({
     street: '',
@@ -108,53 +107,111 @@ export default function CheckoutPage() {
     setErroCupom('');
   }
 
-  async function handleFinalizarPedido() {
-    if (itens.length === 0) { setErro('Seu carrinho está vazio.'); return; }
-    setLoading(true); setErro('');
+  function validarEndereco(): string | null {
+    const camposObrigatorios: (keyof typeof form)[] = ['zip_code', 'street', 'number', 'neighborhood', 'city', 'state'];
+    for (const campo of camposObrigatorios) {
+      if (!form[campo].trim()) {
+        return 'Preencha todos os campos de endereço obrigatórios (complemento é opcional).';
+      }
+    }
+    return null;
+  }
+
+  async function handleIrParaPagamento() {
+    if (itens.length === 0) {
+      setErro('Seu carrinho está vazio.');
+      return;
+    }
+
+    const erroEndereco = validarEndereco();
+    if (erroEndereco) {
+      setErro(erroEndereco);
+      return;
+    }
+
+    setLoading(true);
+    setErro('');
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
+      const resAddress = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/addresses`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          items: itens.map(item => ({ product_id: item.id, quantity: item.quantidade, price: item.price })),
-          address: form,
-          total: cupomAplicado ? cupomAplicado.final_total : total,
-          coupon_code: cupomAplicado?.code || null,
-        }),
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(form),
       });
 
-      if (res.status === 401) {
+      if (resAddress.status === 401) {
         limparSessaoEExpirada(router);
         return;
       }
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        setErro(getMensagemErro(res.status, data?.message));
+      if (!resAddress.ok) {
+        const data = await resAddress.json().catch(() => null);
+        setErro(getMensagemErro(resAddress.status, data?.message));
         return;
       }
 
+      const endereco = await resAddress.json();
+
+      const resOrder = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          address_id: endereco.id,
+          items: itens.map(item => ({ product_id: item.id, quantity: item.quantidade })),
+        }),
+      });
+
+      if (resOrder.status === 401) {
+        limparSessaoEExpirada(router);
+        return;
+      }
+
+      if (!resOrder.ok) {
+        const data = await resOrder.json().catch(() => null);
+        setErro(getMensagemErro(resOrder.status, data?.message));
+        return;
+      }
+
+      const pedido = await resOrder.json();
+
+      const resPreference = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/preference`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ order_id: pedido.id }),
+      });
+
+      if (resPreference.status === 401) {
+        limparSessaoEExpirada(router);
+        return;
+      }
+
+      if (!resPreference.ok) {
+        const data = await resPreference.json().catch(() => null);
+        setErro(data?.message || 'Erro ao gerar link de pagamento.');
+        return;
+      }
+
+      const preference = await resPreference.json();
+
       limparCarrinho();
-      setSucesso(true);
+      window.location.href = preference.sandbox_init_point || preference.init_point;
     } catch {
       setErro('Erro ao conectar com o servidor.');
     } finally {
       setLoading(false);
     }
-  }
-
-  if (sucesso) {
-    return (
-      <div className="max-w-lg mx-auto px-4 py-20 text-center">
-        <p className="text-5xl mb-4">🎉</p>
-        <h1 className="text-2xl font-bold mb-2" style={{ color: '#1E5AA8' }}>Pedido realizado!</h1>
-        <p className="text-gray-500 mb-6">Obrigada pela compra. Seu pedido foi registrado com sucesso.</p>
-        <button onClick={() => router.push('/')} style={{ backgroundColor: '#22D3E6' }} className="text-white px-6 py-3 rounded-full font-bold hover:opacity-90">
-          Voltar à loja
-        </button>
-      </div>
-    );
   }
 
   const totalFinal = cupomAplicado ? cupomAplicado.final_total : total;
@@ -270,12 +327,12 @@ export default function CheckoutPage() {
         {erro && <p className="text-red-500 text-sm">{erro}</p>}
 
         <button
-          onClick={handleFinalizarPedido}
+          onClick={handleIrParaPagamento}
           disabled={loading || itens.length === 0}
           style={{ backgroundColor: '#1E5AA8' }}
           className="text-white py-4 rounded-full font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
         >
-          {loading ? 'Finalizando...' : 'Finalizar Pedido'}
+          {loading ? 'Redirecionando...' : 'Ir para pagamento'}
         </button>
       </div>
 
