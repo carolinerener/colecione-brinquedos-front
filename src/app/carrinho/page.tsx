@@ -22,7 +22,7 @@ export default function CarrinhoPage() {
         <h1 className="text-2xl font-bold mb-4" style={{ color: '#1E5AA8' }}>
           Seu carrinho está vazio
         </h1>
-        <Link href="/produtos">
+        <Link href="/">
           <button
             style={{ backgroundColor: '#22D3E6' }}
             className="text-white px-8 py-3 rounded-full font-bold hover:opacity-90 transition-opacity"
